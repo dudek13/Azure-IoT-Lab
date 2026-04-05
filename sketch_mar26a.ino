@@ -2,6 +2,8 @@
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+// encrypted data
+#include "secrets.h"
 
 //Declaring a variable containing DigiCert Global Root G2, standard for Azure encoding
 const char* digicert_root_ca = \
@@ -28,11 +30,11 @@ const char* digicert_root_ca = \
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
 
-const char* ssid = "ssid";
-const char* password = "passwd";
-const char* host = "azure_lab_site";
-const char* deviceId = "esp32_id";
-const char* sasToken = "sas";
+const char* ssid = SECRET_WIFI_SSID;
+const char* password = SECRET_WIFI_PASS;
+const char* host = "Adrian-CyberLab-Hub.azure-devices.net";
+const char* deviceId = "ESP32";
+const char* sasToken = SECRET_AZURE_SAS_TOKEN;
 const int buttonPin = 14;
 
 void setup_wifi() {
@@ -89,12 +91,16 @@ void loop() {
   int buttonState = digitalRead(buttonPin);
   if (buttonState == LOW) {
     Serial.println("Button pressed, building JSON...");
+    // generating random sensor value for json file
+    int currentSensorValue = random(10, 100);
+    
     // Reserving memory for JSON
     StaticJsonDocument<200> doc;
     
     // FIlling out dictionary with needed data
     doc["device"] = "ESP32-Lab";
     doc["status"] = "ALARM_BUTTON_PRESSED";
+    doc["sensor_value"] = currentSensorValue;
     
     // Initializng buffer of chars and serializing it with JSON
     char buffer[256];
