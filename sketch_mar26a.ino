@@ -36,6 +36,21 @@ const char* host = "Adrian-CyberLab-Hub.azure-devices.net";
 const char* deviceId = "ESP32";
 const char* sasToken = SECRET_AZURE_SAS_TOKEN;
 const int buttonPin = 14;
+const int ledPin = 2;
+
+void callback(char* topic, byte* message, unsigned int message_len) {
+  Serial.print(topic);
+  String text = "";
+  for(int i = 0; i < message_len; i++) {
+    text += (char)message[i];
+  }
+  if (text == "ON") {
+    digitalWrite(ledPin, HIGH);
+  }
+  else if (text == "OFF") {
+    digitalWrite(ledPin, LOW);
+  }
+}
 
 void setup_wifi() {
 
@@ -58,13 +73,17 @@ void setup_wifi() {
   }
 }
 
+
 void reconnect() {
 
   String username = String(host) + "/" + deviceId + "/?api-version=2021-04-12";
   while (!client.connected()) {
     Serial.print("Trying to connect with Azure...");
     if (client.connect(deviceId, username.c_str() , sasToken)) {
-      Serial.println("Connection with Azure achieved");
+      // topic fo cloud to device command
+      String subscribeTopic = "devices/" + String(deviceId) + "/messages/devicebound/#";
+      client.subscribe(subscribeTopic.c_str());
+      Serial.println("Connection with Azure achieved Subscribed to C2D messages");
     }
     else {
       Serial.print("Error, code: "); 
@@ -78,10 +97,12 @@ void reconnect() {
 void setup() {
   Serial.begin(115200);
   pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
   // Configuring the virtual client
   espClient.setInsecure(); // Tells ESP32 to only trust servers signed by DigiCert
   client.setServer(host, 8883); // Function setting the target, our host and MQTT port which always equals 8883
   setup_wifi();
+  client.setCallback(callback);
 }
 
 void loop() {
