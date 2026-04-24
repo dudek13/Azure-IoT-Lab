@@ -5,7 +5,7 @@ This project demonstrates secure IoT communication, cloud automation, and Infras
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 The project consists of a complete data pipeline routing telemetry and security events from the physical edge to a local SIEM:
 1. **Device-to-Cloud (D2C):** ESP32 detects physical events (e.g., button press/alarm) and sends a JSON payload to Azure via HTTP POST / MQTT.
@@ -16,7 +16,7 @@ The project consists of a complete data pipeline routing telemetry and security 
 
 ---
 
-## 🚀 Key Functionalities
+## Key Functionalities
 * **Containerized SIEM Environment:** Splunk Enterprise and Ngrok are deployed automatically using `docker-compose`, eliminating manual installation and ensuring environmental consistency.
 * **Cloud Automation:** Integration with **Azure Logic Apps** to route traffic and act as a middleware bridge between the IoT device and the local server.
 * **Sensitive Data Management (DevSecOps):** Strict separation of credentials. WiFi/Azure keys are secured via `secrets.h` on the device, while Splunk/Ngrok tokens are secured via `.env` files in Docker. Git ignores both.
@@ -24,7 +24,7 @@ The project consists of a complete data pipeline routing telemetry and security 
 
 ---
 
-## 🛠️ Hardware and Technology Stack
+## Hardware and Technology Stack
 
 | Category | Tools / Technologies |
 | :--- | :--- |
@@ -37,7 +37,7 @@ The project consists of a complete data pipeline routing telemetry and security 
 
 ---
 
-## ⚙️ How to run the project?
+## How to run the project?
 
 ### Phase 1: Local SIEM Setup (Docker)
 1. **Clone the repository**: `git clone https://github.com/dudek13/Azure-IoT-Lab`
@@ -63,12 +63,12 @@ The project consists of a complete data pipeline routing telemetry and security 
 
 ---
 
-## 🛡️ Security & Privacy (Zero Trust)
+## Security & Privacy (Zero Trust)
 To prevent critical data leaks, both `.env` and `secrets.h` files are permanently excluded from the repository using the `.gitignore` file. Never commit raw passwords or tokens.
 
 ---
 
-## 🐛 Troubleshooting (Issues & Solutions)
+## Troubleshooting (Issues & Solutions)
 
 * **Issue:** Splunk container crashes immediately after startup (Status: Exited 1).
   * **Solution:** Splunk requires explicit acceptance of the General Terms. Added `SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com` to `docker-compose.yml`. Ensure the password is at least 8 characters long.
