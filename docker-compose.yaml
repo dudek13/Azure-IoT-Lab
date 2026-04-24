@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk_siem
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com
+      - SPLUNK_PASSWORD=${SPLUNK_ADMIN_PASS}
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok_tunnel
+    depends_on:
+      - splunk
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_TOKEN}
+    command: "http splunk:8088"
+    ports:
+      - "4040:4040"
