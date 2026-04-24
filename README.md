@@ -20,7 +20,7 @@ The project consists of a complete data pipeline routing telemetry and security 
 * **Containerized SIEM Environment:** Splunk Enterprise and Ngrok are deployed automatically using `docker-compose`, eliminating manual installation and ensuring environmental consistency.
 * **Cloud Automation:** Integration with **Azure Logic Apps** to route traffic and act as a middleware bridge between the IoT device and the local server.
 * **Sensitive Data Management (DevSecOps):** Strict separation of credentials. WiFi/Azure keys are secured via `secrets.h` on the device, while Splunk/Ngrok tokens are secured via `.env` files in Docker. Git ignores both.
-* **Secure Communication:** Usage of TLS/SSL certificates for cloud communication and proper handling of authentication tokens (SAS, Ngrok Auth, Splunk HEC).
+* **Hybrid Security & SSL Offloading:** Public data transit (Azure to Ngrok endpoint) is fully secured via HTTPS/TLS. For local container communication, SSL offloading is applied, routing plain HTTP from Ngrok directly to Splunk. Device-to-Cloud communication utilizes MQTT over TLS (port 8883) with SAS token authentication.
 
 ---
 
