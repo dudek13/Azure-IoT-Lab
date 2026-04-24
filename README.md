@@ -1,50 +1,78 @@
-# Project: Azure Iot Secure Edge Controller (ESP32)
+# Project: Azure IoT SIEM & Edge Security Controller (ESP32 + Splunk)
 
-Summary: Monitoring and Edge Device controlling system integrated with **Microsoft Azure**.
-Project demonstrates safe, bidirectional MQTT communication and automatization of business procedures in cloud.
-
----
-
-## System's architecture
-
-Project is based on two data flow directions:
-1. **D2C (Device-to-Cloud):** ESP32 sends alerts in a form of JSON (device status and sensor value) after event detection (pressed button).
-2. **C2D (Cloud-to-Device):** Azure cloud sends control commands (ON/OFF) directly to ESP32, using *MQTT Callback*.
+**Summary:** An advanced Edge Device monitoring and security logging system integrated with **Microsoft Azure** and a local **Splunk SIEM** environment. 
+This project demonstrates secure IoT communication, cloud automation, and Infrastructure as Code (IaC) using Docker containerization to build a fully functional Security Operations Center (SOC) data pipeline.
 
 ---
 
-## Key functionalities
-* **Safe communication:** Used MQTT protocol through 8883 port with TLS/SSL certificates.
-* **Authentication:** Protected access to Azure IoT Hub using SAS (Shared Access Signature) token.
-* **Sensitive Data Management:** Full separation of sensitive data (Wifi ssid and password, Azure keys) from source code using 'secrets.h' and '.gitignore'.
-* **Cloud automation:** Integration with **Azure Logic Apps**, which automatically sends e-mail notification after receiving telemetery from device.
-* **Time synchronization:** Used NTP protocol for correct certifactions and tokens validation.
+## 🏗️ System Architecture
+
+The project consists of a complete data pipeline routing telemetry and security events from the physical edge to a local SIEM:
+1. **Device-to-Cloud (D2C):** ESP32 detects physical events (e.g., button press/alarm) and sends a JSON payload to Azure via HTTP POST / MQTT.
+2. **Cloud Orchestration:** **Azure Logic Apps** catches the payload and forwards it to a dynamically generated Ngrok tunnel.
+3. **Tunneling & Containerization:** The Ngrok container securely routes the public traffic into a private Docker network.
+4. **SIEM Ingestion:** **Splunk Enterprise** receives the data via HTTP Event Collector (HEC) on port 8088 and indexes it for real-time threat monitoring and dashboarding.
+5. **Cloud-to-Device (C2D) *(Optional/Legacy)*:** Azure can send control commands (ON/OFF) directly back to the ESP32.
 
 ---
 
-## Hardware and Technology Stack
+## 🚀 Key Functionalities
+* **Containerized SIEM Environment:** Splunk Enterprise and Ngrok are deployed automatically using `docker-compose`, eliminating manual installation and ensuring environmental consistency.
+* **Cloud Automation:** Integration with **Azure Logic Apps** to route traffic and act as a middleware bridge between the IoT device and the local server.
+* **Sensitive Data Management (DevSecOps):** Strict separation of credentials. WiFi/Azure keys are secured via `secrets.h` on the device, while Splunk/Ngrok tokens are secured via `.env` files in Docker. Git ignores both.
+* **Secure Communication:** Usage of TLS/SSL certificates for cloud communication and proper handling of authentication tokens (SAS, Ngrok Auth, Splunk HEC).
+
+---
+
+## 🛠️ Hardware and Technology Stack
 
 | Category | Tools / Technologies |
 | :--- | :--- |
 | **Hardware** | ESP32, Button, LED |
-| **Cloud Platform** | Microsoft Azure (IoT Hub, Logic Apps) |
-| **Protocols** | MQTT, HTTPS, NTP |
-| **Language/Libraries** | C++, ArduinoJson, PubSubClient, WiFiClientSecure |
-| **Tools** | Git, Azure IoT Explorer |
+| **Cloud Platform** | Microsoft Azure (Logic Apps, IoT Hub) |
+| **Local Server** | Docker, Docker Compose |
+| **Monitoring / SIEM** | Splunk Enterprise, Ngrok |
+| **Protocols** | HTTP(S) POST, MQTT, NTP |
+| **Language/Libraries** | C++, ArduinoJson, Bash |
 
 ---
 
-## How to run the project ?
+## ⚙️ How to run the project?
 
-1. **Clone the repository**: 'git clone https://github.com/dudek13/Azure-IoT-Lab'
-2. **Secrets configuration:** 
-	* In main folder you'll find: 'secrets_example.h'.
-	* Change it's name to: 'secrets.h'
-	* Fill in the parameters: 'SECRETS_WIFI_SSID', 'SECRETS_WIFI_PASS' 									and 'SECRET_AZURE_TOKEN'.
-3. **Compiling:** Open '.ino' file in Arduino IDE, install the required libraries and upload the code into ESP32.
-4. **Testing:** Use *Azure IoT Explorer* or Azure portal to send the commands 'ON'/'OFF' and observe led reaction.
+### Phase 1: Local SIEM Setup (Docker)
+1. **Clone the repository**: `git clone https://github.com/dudek13/Azure-IoT-Lab`
+2. **Environment Configuration:** * Locate the `.env.example` file in the main directory.
+   * Rename it or copy it to: `.env`
+   * Fill in your secure parameters: `SPLUNK_ADMIN_PASS` (min. 8 characters) and `NGROK_TOKEN`.
+3. **Start the Infrastructure:** Run `docker compose up -d` in your terminal.
+4. **Splunk Configuration:**
+   * Go to `http://localhost:8000` and log in.
+   * Navigate to **Settings -> Data Inputs -> HTTP Event Collector**.
+   * Go to **Global Settings**, ensure Tokens are *Enabled* and **Disable SSL** (critical for local Docker traffic).
+   * Create a new Token, assign it to the `main` index, and copy it.
+
+### Phase 2: Hardware Setup (ESP32)
+1. **Secrets configuration:** * Locate `secrets_example.h` in the ESP32 code folder.
+   * Rename it to `secrets.h`.
+   * Fill in your `WIFI_SSID`, `WIFI_PASS`, and cloud endpoint/tokens.
+2. **Flashing:** Open the `.ino` file in Arduino IDE, install required libraries, and upload the code to your ESP32.
+
+### Phase 3: Cloud Routing
+1. Go to `http://localhost:4040` (Ngrok Web Interface) and copy your public forwarding URL.
+2. Update your **Azure Logic App** HTTP action with the new Ngrok URL (append `/services/collector/event` at the end) and insert your new Splunk HEC Token in the headers.
 
 ---
 
-## Safety
-'secrets.h' file was excluded from the repository using '.gitignore' in order to prevent any important data leak.
+## 🛡️ Security & Privacy (Zero Trust)
+To prevent critical data leaks, both `.env` and `secrets.h` files are permanently excluded from the repository using the `.gitignore` file. Never commit raw passwords or tokens.
+
+---
+
+## 🐛 Troubleshooting (Issues & Solutions)
+
+* **Issue:** Splunk container crashes immediately after startup (Status: Exited 1).
+  * **Solution:** Splunk requires explicit acceptance of the General Terms. Added `SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com` to `docker-compose.yml`. Ensure the password is at least 8 characters long.
+* **Issue:** Ngrok tunnel times out (ERR_NGROK_8012) and fails to forward traffic to Splunk.
+  * **Solution:** Splunk HEC defaults to encrypted HTTPS. Because Ngrok handles the public HTTPS and forwards plain HTTP internally, you must uncheck **"Enable SSL"** in Splunk's HEC Global Settings.
+* **Issue:** Git push rejected (Divergent Branches / Fetch First).
+  * **Solution:** The remote repository contained files not present locally (e.g., initialized README). Ran `git config pull.rebase false`, followed by `git pull origin main` to merge, and then successfully pushed using `git push origin main`.
