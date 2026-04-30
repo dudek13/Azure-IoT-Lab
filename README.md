@@ -44,8 +44,10 @@ The project consists of a complete data pipeline routing telemetry and security 
 2. **Environment Configuration:** * Locate the `.env.example` file in the main directory.
    * Rename it or copy it to: `.env`
    * Fill in your secure parameters: `SPLUNK_ADMIN_PASS` (min. 8 characters) and `NGROK_TOKEN`.
-3. **Start the Infrastructure:** We use a custom Bash script to automate the deployment and Ngrok routing. Run:
+3. **Start the Infrastructure:** I use a custom Bash script to automate the deployment and Ngrok routing.To run the script *jq* needs to be installed, run:
    ```bash
+   sudo apt update
+   sudo apt install jq -y
    chmod +x start_env.sh
    ./start_env.sh
 4. **Splunk Configuration:**
