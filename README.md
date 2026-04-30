@@ -44,7 +44,10 @@ The project consists of a complete data pipeline routing telemetry and security 
 2. **Environment Configuration:** * Locate the `.env.example` file in the main directory.
    * Rename it or copy it to: `.env`
    * Fill in your secure parameters: `SPLUNK_ADMIN_PASS` (min. 8 characters) and `NGROK_TOKEN`.
-3. **Start the Infrastructure:** Run `docker compose up -d` in your terminal.
+3. 3. **Start the Infrastructure:** We use a custom Bash script to automate the deployment and Ngrok routing. Run:
+   ```bash
+   chmod +x start_env.sh
+   ./start_env.sh
 4. **Splunk Configuration:**
    * Go to `http://localhost:8000` and log in.
    * Navigate to **Settings -> Data Inputs -> HTTP Event Collector**.
@@ -58,7 +61,7 @@ The project consists of a complete data pipeline routing telemetry and security 
 2. **Flashing:** Open the `.ino` file in Arduino IDE, install required libraries, and upload the code to your ESP32.
 
 ### Phase 3: Cloud Routing
-1. Go to `http://localhost:4040` (Ngrok Web Interface) and copy your public forwarding URL.
+1. The `start_env.sh` script will automatically fetch and display your new public Ngrok URL in the terminal. Copy this URL.
 2. Update your **Azure Logic App** HTTP action with the new Ngrok URL (append `/services/collector/event` at the end) and insert your new Splunk HEC Token in the headers.
 
 ---
