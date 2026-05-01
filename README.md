@@ -57,15 +57,18 @@ The project consists of a complete data pipeline routing telemetry and security 
    * Create a new Token, assign it to the `main` index, and copy it.
 
 ### Phase 2: Hardware Setup (ESP32)
-1. **Secrets configuration:** * Locate `secrets_example.h` in the ESP32 code folder.
-   * Rename it to `secrets.h`.
+1. **Secrets configuration:** 
+   * Locate `secrets_example.h` in the ESP32 code folder and rename it to `secrets.h`.
    * Fill in your `WIFI_SSID`, `WIFI_PASS`, and cloud endpoint/tokens.
-2. **Flashing:** Open the `.ino` file in Arduino IDE, install required libraries, and upload the code to your ESP32.
-
+2. **Secure TLS Certificate:** Ensure the ESP32 code includes the **DigiCert Global Root G2** certificate to enable secure TLS connections to Azure IoT Hub.
+3. **Flashing:** Open the `.ino` file in Arduino IDE, install required libraries, and upload the code to your ESP32.
+   
 ### Phase 3: Cloud Routing
 1. The `start_env.sh` script will automatically fetch and display your new public Ngrok URL in the terminal. Copy this URL.
 2. Update your **Azure Logic App** HTTP action with the new Ngrok URL (append `/services/collector/event` at the end) and insert your new Splunk HEC Token in the headers.
-
+3. **Payload Decoding (Crucial):** Azure IoT Hub natively encodes device MQTT messages into Base64 format. In your Azure Logic App HTTP action, you MUST use the following expression in the Body field to decode the payload into readable JSON for Splunk:
+   `json(base64ToString(triggerBody()?[0]?['data']?['body']))`
+4. **Logic App Schema:** Ensure the "Request Body JSON Schema" in the HTTP trigger is set to an empty object `{}` so Azure doesn't filter out unexpected dynamic telemetry fields from the ESP32.
 ---
 
 ## Security & Privacy (Zero Trust)
@@ -81,3 +84,9 @@ To prevent critical data leaks, both `.env` and `secrets.h` files are permanentl
   * **Solution:** Splunk HEC defaults to encrypted HTTPS. Because Ngrok handles the public HTTPS and forwards plain HTTP internally, you must uncheck **"Enable SSL"** in Splunk's HEC Global Settings.
 * **Issue:** Git push rejected (Divergent Branches / Fetch First).
   * **Solution:** The remote repository contained files not present locally (e.g., initialized README). Ran `git config pull.rebase false`, followed by `git pull origin main` to merge, and then successfully pushed using `git push origin main`.
+* **Issue:** Docker container conflicts ("The container name is already in use").
+  * **Solution:** Occurs when manually spun containers aren't cleanly stopped. Forcefully remove them using `docker rm -f splunk_siem` and `docker rm -f ngrok_tunnel`.
+* **Issue:** Ngrok port 4040 already in use.
+  * **Solution:** Manual background Ngrok processes conflict with the Docker version. Run `killall ngrok` to terminate background processes, then `docker compose down` to clean up the environment.
+* **Issue:** Splunk shows "0 events" when searching for specific JSON telemetry terms (e.g., status="ALARM_BUTTON_PRESSED"), but logs are arriving.
+  * **Solution:** Azure encapsulated the device payload and encoded it in Base64 (e.g., `eyJkZXZp...`). You must implement the Base64 decoding expression in Azure Logic Apps before sending the data to Splunk.
